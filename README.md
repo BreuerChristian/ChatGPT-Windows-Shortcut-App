@@ -24,3 +24,15 @@ python3 main.py
 ```
 
 The app starts minimized to the tray. Use the default shortcut `Ctrl+G` then `G` to show or hide the window. You can change this shortcut from the tray icon menu.
+
+## ChatGPT Translator
+
+`translator_app.py` implements a small helper similar to DeepL. Press `Ctrl+C` twice to rewrite or translate the selected text using the OpenAI ChatGPT API. The result is shown in a popup and copied back to the clipboard.
+
+Before using it, set your OpenAI key in the tray icon menu under *Settings*.
+
+Run it via:
+
+```bash
+python3 translator_app.py
+```
