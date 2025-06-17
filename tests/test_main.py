@@ -36,3 +36,46 @@ def test_change_hotkey_logic(monkeypatch):
     assert removed == ['ctrl+g, g']
     assert dummy.hotkey == 'ctrl+h, h'
     assert dummy.action_text == 'Set Hotkey (ctrl+h, h)'
+
+
+def test_set_autostart_enable_disable(monkeypatch):
+    calls = {}
+
+    class DummyKey:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            pass
+
+    dummy_key = DummyKey()
+
+    def open_key(hive, path, reserved=0, access=0):
+        calls['open'] = (hive, path, access)
+        return dummy_key
+
+    def set_value_ex(key, name, reserved, typ, value):
+        calls['set'] = (key, name, value)
+
+    def delete_value(key, name):
+        calls['del'] = (key, name)
+
+    fake_winreg = types.SimpleNamespace(
+        HKEY_CURRENT_USER=1,
+        KEY_SET_VALUE=2,
+        REG_SZ=1,
+        OpenKey=open_key,
+        SetValueEx=set_value_ex,
+        DeleteValue=delete_value,
+    )
+
+    monkeypatch.setitem(sys.modules, 'winreg', fake_winreg)
+    monkeypatch.setattr(main.sys, 'platform', 'win32')
+    monkeypatch.setattr(main.sys, 'executable', 'python')
+    monkeypatch.setattr(main.os.path, 'abspath', lambda p: 'main.py')
+
+    main.set_autostart(True)
+    assert calls['set'] == (dummy_key, 'ChatGPTShortcut', '"python" "main.py"')
+
+    main.set_autostart(False)
+    assert calls['del'] == (dummy_key, 'ChatGPTShortcut')

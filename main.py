@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -30,6 +31,49 @@ def create_icon():
     return QIcon(pixmap)
 
 
+def is_autostart_enabled():
+    """Return True if the app is set to start with Windows."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+    except Exception:
+        return False
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+        ) as key:
+            winreg.QueryValueEx(key, "ChatGPTShortcut")
+            return True
+    except FileNotFoundError:
+        return False
+
+
+def set_autostart(enable: bool) -> None:
+    """Enable or disable autostart via the Windows registry."""
+    if sys.platform != "win32":
+        return
+    try:
+        import winreg
+    except Exception:
+        return
+    with winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER,
+        r"Software\Microsoft\Windows\CurrentVersion\Run",
+        0,
+        winreg.KEY_SET_VALUE,
+    ) as key:
+        if enable:
+            value = f'"{sys.executable}" "{os.path.abspath(__file__)}"'
+            winreg.SetValueEx(key, "ChatGPTShortcut", 0, winreg.REG_SZ, value)
+        else:
+            try:
+                winreg.DeleteValue(key, "ChatGPTShortcut")
+            except FileNotFoundError:
+                pass
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -53,6 +97,14 @@ class TrayApp(QApplication):
         self.toggle_action.triggered.connect(self.toggle_window)
         self.hotkey_action = self.menu.addAction(f'Set Hotkey ({self.hotkey})')
         self.hotkey_action.triggered.connect(self.change_hotkey)
+        if sys.platform == 'win32':
+            self.autostart_action = self.menu.addAction('Start with Windows')
+            self.autostart_action.setCheckable(True)
+            self.autostart_action.setChecked(is_autostart_enabled())
+            self.autostart_action.triggered.connect(self.toggle_autostart)
+        else:
+            self.autostart_action = self.menu.addAction('Start with Windows')
+            self.autostart_action.setEnabled(False)
         self.menu.addSeparator()
         quit_action = self.menu.addAction('Quit')
         quit_action.triggered.connect(self.exit_app)
@@ -71,6 +123,10 @@ class TrayApp(QApplication):
 
     def register_hotkey(self):
         keyboard.add_hotkey(self.hotkey, self.toggle_window)
+
+    def toggle_autostart(self):
+        enabled = self.autostart_action.isChecked()
+        set_autostart(enabled)
 
     def change_hotkey(self):
         text, ok = QInputDialog.getText(

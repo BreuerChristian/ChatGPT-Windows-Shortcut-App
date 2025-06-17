@@ -7,6 +7,7 @@ This is a small Windows application that shows [chatgpt.com](https://chatgpt.com
 - Global shortcut (default `Ctrl+G` followed by `G`) toggles the window.
 - Tray icon with options to show/hide the window, change the hotkey, and quit the application.
  - The hotkey can be changed using the tray icon menu.
+- Optional setting to start the app automatically with Windows (via tray icon).
 - Uses a simple dark theme for a clean look.
 
 ## Running
